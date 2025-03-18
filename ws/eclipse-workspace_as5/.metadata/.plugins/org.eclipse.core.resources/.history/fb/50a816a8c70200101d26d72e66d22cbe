@@ -1,0 +1,114 @@
+/**********************************************
+Workshop #5
+Course: APD545
+Last Name: Chu
+First Name: Sin Kau
+ID: 155131220
+Section: NDD
+This assignment represents my own work in accordance with Seneca Academic Policy.
+Signature Sin Kau Chu
+Date: 16-Mar-2025
+**********************************************/
+
+package com.groceryapp.model;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CartManager {
+    private static final String CARTS_FILE = "savedCarts.ser";
+    private static int nextCartId = 1;
+    
+    public static int getNextCartId() {
+        return nextCartId++;
+    }
+    
+    // Save cart to file using serialization
+    public static void saveCart(Cart cart) {
+        List<Cart> existingCarts = loadAllCarts();
+        
+        // Check if cart already exists (by ID)
+        boolean found = false;
+        for (int i = 0; i < existingCarts.size(); i++) {
+            if (existingCarts.get(i).getCartId() == cart.getCartId()) {
+                existingCarts.set(i, cart); // Replace with updated cart
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            existingCarts.add(cart);
+        }
+        
+        // Save all carts
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(CARTS_FILE))) {
+            oos.writeObject(existingCarts);
+            System.out.println("Cart #" + cart.getCartId() + " saved successfully.");
+        } catch (IOException e) {
+            System.err.println("Error saving cart: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Load all carts from file
+    @SuppressWarnings("unchecked")
+    public static List<Cart> loadAllCarts() {
+        File file = new File(CARTS_FILE);
+        if (!file.exists()) {
+            return new ArrayList<>(); // Return empty list if file doesn't exist
+        }
+        
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            List<Cart> carts = (List<Cart>) ois.readObject();
+            
+            // Update nextCartId based on the highest cart ID found
+            for (Cart cart : carts) {
+                if (cart.getCartId() >= nextCartId) {
+                    nextCartId = cart.getCartId() + 1;
+                }
+            }
+            
+            return carts;
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error loading carts: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>(); // Return empty list on error
+        }
+    }
+    
+    // Get only incomplete carts
+    public static List<Cart> getIncompleteCarts() {
+        List<Cart> allCarts = loadAllCarts();
+        List<Cart> incompleteCarts = new ArrayList<>();
+        
+        for (Cart cart : allCarts) {
+            if (!cart.isCompleted()) {
+                incompleteCarts.add(cart);
+            }
+        }
+        
+        return incompleteCarts;
+    }
+    
+    // Mark a cart as completed
+    public static void completeCart(int cartId) {
+        List<Cart> carts = loadAllCarts();
+        
+        for (Cart cart : carts) {
+            if (cart.getCartId() == cartId) {
+                cart.setCompleted(true);
+                break;
+            }
+        }
+        
+        // Save updated carts
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(CARTS_FILE))) {
+            oos.writeObject(carts);
+        } catch (IOException e) {
+            System.err.println("Error completing cart: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}

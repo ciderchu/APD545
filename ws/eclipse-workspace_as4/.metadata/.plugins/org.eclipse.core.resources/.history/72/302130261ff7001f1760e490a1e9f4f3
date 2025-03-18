@@ -1,0 +1,8 @@
+module Grocery {
+    requires javafx.controls;
+    requires javafx.fxml;
+
+    opens com.groceryapp.view to javafx.fxml;
+    exports com.groceryapp;
+    exports com.groceryapp.controller;
+}

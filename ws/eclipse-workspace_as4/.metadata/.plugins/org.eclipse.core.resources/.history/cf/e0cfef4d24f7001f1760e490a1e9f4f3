@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.control.*?>
+
+<GridPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.groceryapp.controller.CartController">
+    <children>
+        <ComboBox fx:id="itemsComboBox"/>
+        <Slider fx:id="quantitySlider"/>
+        <Label fx:id="unitPriceLabel"/>
+        <Button fx:id="addToCartButton" text="Add to Cart"/>
+        <TableView fx:id="cartTableView">
+            <columns>
+        		<TableColumn fx:id="itemColumn" text="Item" prefWidth="120"/>
+        		<TableColumn fx:id="quantityColumn" text="Purchased Units" prefWidth="120"/>
+        		<TableColumn fx:id="priceColumn" text="Purchase Price" prefWidth="120"/>
+            </columns>
+        </TableView>
+        <Button fx:id="removeButton" text="Remove from Cart"/>
+        <Label fx:id="totalPriceLabel"/>
+    </children>
+</GridPane>

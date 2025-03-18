@@ -1,0 +1,35 @@
+package com.groceryapp.model;
+
+import javafx.collections.FXCollections;
+import java.io.File;  
+import javafx.collections.ObservableList;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+public class ItemModel {
+    private ObservableList<Item> itemsList = FXCollections.observableArrayList();
+
+    public void loadData() {
+    	
+        File file = new File("ItemsMaster.csv");
+        System.out.println("Looking for CSV at: " + file.getAbsolutePath());
+        System.out.println("File exists? " + file.exists());
+        
+        try (BufferedReader br = new BufferedReader(new FileReader("ItemsMaster2.csv"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 2) {
+                    itemsList.add(new Item(parts[0], Double.parseDouble(parts[1])));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public ObservableList<Item> getItemsList() {
+        return itemsList;
+    }
+}

@@ -1,0 +1,76 @@
+/**********************************************
+Workshop #
+Course: APD545
+Last Name: Chu
+First Name: Sin Kau
+ID: 155131220
+Section: NDD
+This assignment represents my own work in accordance with Seneca Academic Policy.
+Signature Sin Kau Chu
+Date: 2-Mar-2025
+**********************************************/
+
+
+package com.groceryapp.model;
+
+import javafx.collections.FXCollections;
+import java.io.File;  
+import javafx.collections.ObservableList;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+public class ItemModel {
+    private ObservableList<Item> itemsList = FXCollections.observableArrayList();
+
+    public void loadData() {
+        File file = new File("ItemsMaster.csv");
+        System.out.println("Looking for CSV at: " + file.getAbsolutePath());
+        System.out.println("File exists? " + file.exists());
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+
+               
+                if (parts.length >= 4) {
+                    try {
+                        String name = parts[0].trim();   
+                        String unit = parts[1].trim();   
+
+                       
+                        double quantity;
+                        if (parts[2].contains(".")) {
+                            quantity = Double.parseDouble(parts[2].trim());
+                        } else {
+                            quantity = Integer.parseInt(parts[2].trim()); 
+                        }
+
+                        double price = Double.parseDouble(parts[3].trim()); // Price
+
+                       
+                        itemsList.add(new Item(name, unit, quantity, price));
+
+                       
+                        System.out.println("Added: " + name + " | " + unit + " | " + quantity + " | $" + price);
+
+                    } catch (NumberFormatException e) {
+                        System.err.println("Skipping invalid line: " + line);
+                    }
+                } else {
+                    System.err.println("Skipping incomplete line: " + line);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+    public ObservableList<Item> getItemsList() {
+        return itemsList;
+    }
+}

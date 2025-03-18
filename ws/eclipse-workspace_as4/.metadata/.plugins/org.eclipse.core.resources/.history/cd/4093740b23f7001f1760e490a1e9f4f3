@@ -1,0 +1,90 @@
+package com.groceryapp.controller;
+
+import com.groceryapp.model.Item;
+import com.groceryapp.model.ItemModel;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.ObjectBinding;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+
+public class CartController {
+    @FXML private ComboBox<Item> itemsComboBox;
+    @FXML private Slider quantitySlider;
+    @FXML private Label unitPriceLabel, totalPriceLabel;
+    @FXML private TableView<Item> cartTableView;
+    @FXML private TableColumn<Item, String> itemColumn;
+    @FXML private TableColumn<Item, Double> priceColumn;
+    @FXML private TableColumn<Item, Integer> quantityColumn;
+    @FXML private Button addToCartButton, removeButton;
+
+    private ItemModel itemModel = new ItemModel();
+    private ObservableList<Item> cartItems = FXCollections.observableArrayList();
+
+    @FXML
+    public void initialize() {
+        itemModel.loadData();
+        itemsComboBox.setItems(itemModel.getItemsList());
+
+        itemsComboBox.valueProperty().addListener((obs, oldItem, newItem) -> {
+            if (newItem != null) {
+                unitPriceLabel.setText(String.format("$%.2f", newItem.getPrice()));
+            }
+        });
+
+        addToCartButton.setOnAction(e -> addToCart());
+        removeButton.setOnAction(e -> removeFromCart());
+
+        // Binding total price
+        ObjectBinding<Double> totalBinding = Bindings.createObjectBinding(() ->
+            cartItems.stream().mapToDouble(item -> item.getPrice() * quantitySlider.getValue()).sum(),
+            cartItems
+        );
+
+        totalPriceLabel.textProperty().bind(Bindings.format("$%.2f", totalBinding));
+    }
+
+    private void addToCart() {
+        Item selectedItem = itemsComboBox.getValue();
+        if (selectedItem != null) {
+            // Get the quantity from the slider (can be double if needed)
+            double quantityToBuy = quantitySlider.getValue();
+            
+            // Ensure user selects at least 1 unit
+            if (quantityToBuy <= 0) {
+                System.out.println("Please select a valid quantity.");
+                return;
+            }
+
+            // Check if the item is already in the cart, update quantity if it exists
+            for (Item cartItem : cartItems) {
+                if (cartItem.getName().equals(selectedItem.getName())) {
+                    cartItem.setQuantity(cartItem.getQuantity() + quantityToBuy);
+                    cartTableView.refresh(); // Refresh table to show updated quantity
+                    return;
+                }
+            }
+
+            // Create a new Item with the same name, price, and unit as the selectedItem,
+            // but with the updated quantityToBuy.
+            Item itemForCart = new Item(
+                selectedItem.getName(),    // name
+                selectedItem.getUnit(),    // unit
+                quantityToBuy,             // qty (double)
+                selectedItem.getPrice()    // price
+            );
+
+            cartItems.add(itemForCart);
+            cartTableView.setItems(cartItems);
+        }
+    }
+
+
+    private void removeFromCart() {
+        Item selectedItem = cartTableView.getSelectionModel().getSelectedItem();
+        if (selectedItem != null) {
+            cartItems.remove(selectedItem);
+        }
+    }
+}

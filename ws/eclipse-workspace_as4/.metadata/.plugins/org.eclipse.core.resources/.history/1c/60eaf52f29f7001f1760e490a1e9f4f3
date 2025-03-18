@@ -1,0 +1,117 @@
+package com.groceryapp.controller;
+
+import com.groceryapp.model.Item;
+import com.groceryapp.model.ItemModel;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.ObjectBinding;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+
+public class CartController {
+	@FXML private ComboBox<Item> itemsComboBox;
+	@FXML private Slider quantitySlider;
+	@FXML private Label unitPriceLabel, totalPriceLabel;
+	@FXML private Button addToCartButton, removeButton;
+	@FXML private TableView<Item> cartTableView;
+	@FXML private TableColumn<Item, String> itemColumn;
+	@FXML private TableColumn<Item, Double> priceColumn;
+	@FXML private TableColumn<Item, Double> quantityColumn;
+	@FXML private Label selectedQuantityLabel;
+
+ 
+    private ItemModel itemModel = new ItemModel();
+    private ObservableList<Item> cartItems = FXCollections.observableArrayList();
+
+    @FXML
+    public void initialize() {
+        // 1. Load data into the combo box
+        itemModel.loadData();
+        itemsComboBox.setItems(itemModel.getItemsList());
+        
+        // 2. Set cell value factories for your TableView columns
+        itemColumn.setCellValueFactory(cellData -> 
+            Bindings.createObjectBinding(() -> cellData.getValue().getName())
+        );
+        priceColumn.setCellValueFactory(cellData -> 
+            Bindings.createObjectBinding(() -> cellData.getValue().getPrice())
+        );
+        quantityColumn.setCellValueFactory(cellData -> 
+            Bindings.createObjectBinding(() -> cellData.getValue().getQuantity())
+        );
+
+        // 3. Whenever an item is selected in the combo box, update its unit price label
+        itemsComboBox.valueProperty().addListener((obs, oldItem, newItem) -> {
+            if (newItem != null) {
+                unitPriceLabel.setText(String.format("$%.2f", newItem.getPrice()));
+            } else {
+                unitPriceLabel.setText("$0.00");
+            }
+        });
+
+        // 4. Update selectedQuantityLabel whenever the slider changes
+        quantitySlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            selectedQuantityLabel.setText(String.format("%.0f", newVal.doubleValue()));
+        });
+
+        // 5. Set up button event handlers
+        addToCartButton.setOnAction(e -> addToCart());
+        removeButton.setOnAction(e -> removeFromCart());
+
+        // 6. Bind total price based on each cart item's quantity * price
+        ObjectBinding<Double> totalBinding = Bindings.createObjectBinding(() ->
+            cartItems.stream().mapToDouble(item -> item.getPrice() * item.getQuantity()).sum(),
+            cartItems
+        );
+        totalPriceLabel.textProperty().bind(Bindings.format("$%.2f", totalBinding));
+    }
+
+
+    private void addToCart() {
+        Item selectedItem = itemsComboBox.getValue();
+        if (selectedItem != null) {
+            double quantityToBuy = quantitySlider.getValue();
+
+            if (quantityToBuy <= 0) {
+                System.out.println("Please select a valid quantity.");
+                return;
+            }
+
+            // Check if item exists in the cart and update quantity
+            for (Item cartItem : cartItems) {
+                if (cartItem.getName().equals(selectedItem.getName())) {
+                    cartItem.setQuantity(cartItem.getQuantity() + quantityToBuy);
+                    cartTableView.refresh();
+                    updateTotalPrice(); // Update total price
+                    return;
+                }
+            }
+
+            // Create new item and add to cart
+            Item itemForCart = new Item(
+                selectedItem.getName(),
+                selectedItem.getUnit(),
+                quantityToBuy,
+                selectedItem.getPrice()
+            );
+
+            cartItems.add(itemForCart);
+            cartTableView.setItems(cartItems);
+            updateTotalPrice(); // Update total price
+        }
+    }
+
+    // Method to update total price label
+    private void updateTotalPrice() {
+        double total = cartItems.stream().mapToDouble(item -> item.getQuantity() * item.getPrice()).sum();
+        totalPriceLabel.setText(String.format("$%.2f", total));
+    }
+
+    private void removeFromCart() {
+        Item selectedItem = cartTableView.getSelectionModel().getSelectedItem();
+        if (selectedItem != null) {
+            cartItems.remove(selectedItem);
+        }
+    }
+}

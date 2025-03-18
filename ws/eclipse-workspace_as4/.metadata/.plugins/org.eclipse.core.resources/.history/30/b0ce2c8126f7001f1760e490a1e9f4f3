@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.*?>
+
+<GridPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.groceryapp.controller.CartController" hgap="10" vgap="10" padding="10">
+    <children>
+        <!-- Dropdown for selecting items -->
+        <Label text="Select Item:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <ComboBox fx:id="itemsComboBox" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+        <!-- Unit and Price Labels -->
+        <Label text="Unit:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        
+        <Label fx:id="unitPriceLabel" text="0.00" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        
+        <Label text="Purchased Units:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <Slider fx:id="quantitySlider" min="1" max="10" blockIncrement="1" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label fx:id="selectedQuantityLabel" text="1" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+
+        <!-- Buttons: Add to Cart / Remove from Cart -->
+        <HBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="3">
+            <Button fx:id="addToCartButton" text="Add to Cart"/>
+            <Button fx:id="removeButton" text="Remove from Cart"/>
+        </HBox>
+
+        <!-- TableView for cart items -->
+        <TableView fx:id="cartTableView" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="3">
+            <TableColumn fx:id="itemColumn" text="Item Name" prefWidth="150"/>
+            <TableColumn fx:id="quantityColumn" text="Purchased Units" prefWidth="150"/>
+            <TableColumn fx:id="priceColumn" text="Purchase Price" prefWidth="150"/>
+        </TableView>
+
+        <!-- Total Price Label -->
+        <Label text="Total Amount:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+        <Label fx:id="totalPriceLabel" text="$0.00" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+    </children>
+</GridPane>

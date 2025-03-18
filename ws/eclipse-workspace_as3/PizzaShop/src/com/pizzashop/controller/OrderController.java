@@ -1,0 +1,93 @@
+package com.pizzashop.controller;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
+
+public class OrderController {
+
+    @FXML
+    private TextField nameField, phoneField, quantityField;
+
+    @FXML
+    private ComboBox<String> sizeComboBox;
+
+    @FXML
+    private TextArea orderSummary;
+
+    @FXML
+    private Button placeOrderButton, clearButton;
+
+    @FXML
+    private RadioButton cheeseRadio, vegetarianRadio, meatLoverRadio;
+
+    private ToggleGroup typeGroup;
+
+    @FXML
+    public void initialize() {
+        // initializing the  pizza size dropdown
+        sizeComboBox.getItems().addAll("Small", "Medium", "Large");
+        sizeComboBox.setValue("Small"); // Default selection
+
+        // initializing the toggle group for Pizza Type selection
+        typeGroup = new ToggleGroup();
+        cheeseRadio.setToggleGroup(typeGroup);
+        vegetarianRadio.setToggleGroup(typeGroup);
+        meatLoverRadio.setToggleGroup(typeGroup);
+    }
+
+    // handling the Place Order Button Click
+    @FXML
+    private void handlePlaceOrder(MouseEvent event) {
+        String name = nameField.getText().trim();
+        String phone = phoneField.getText().trim();
+        String size = sizeComboBox.getValue();
+        String quantityText = quantityField.getText().trim();
+        RadioButton selectedType = (RadioButton) typeGroup.getSelectedToggle();
+
+        // Validation
+        if (name.isEmpty() || phone.isEmpty() || selectedType == null || quantityText.isEmpty()) {
+            orderSummary.setText("Please fill in all fields before placing an order.");
+            return;
+        }
+
+        int quantity;
+        try {
+            quantity = Integer.parseInt(quantityText);
+            if (quantity <= 0) {
+                orderSummary.setText("Quantity must be a positive number.");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            orderSummary.setText("Invalid quantity. Please enter a number.");
+            return;
+        }
+
+        // generating the  Order Summary
+        String orderDetails = String.format(
+            "Order Details:\n" +
+            "----------------------\n" +
+            "Customer Name: %s\n" +
+            "Phone: %s\n" +
+            "Pizza Type: %s\n" +
+            "Size: %s\n" +
+            "Quantity: %d\n" +
+            "----------------------\n" +
+            "Thank you for your order!",
+            name, phone, selectedType.getText(), size, quantity
+        );
+
+        orderSummary.setText(orderDetails);
+    }
+
+    // handling Clear Button Click
+    @FXML
+    private void handleClear(MouseEvent event) {
+        nameField.clear();
+        phoneField.clear();
+        quantityField.clear();
+        orderSummary.clear();
+        typeGroup.selectToggle(null); // Unselects radio buttons
+        sizeComboBox.setValue("Small"); // Reset to default
+    }
+}

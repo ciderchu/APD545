@@ -1,0 +1,21 @@
+package com.groceryapp.model;
+
+public class Item {
+    private String name;
+    private double price;
+    private double qty;
+    private String unit;
+
+    public Item(String name, double price, int qty, String unit) {
+        this.name = name;
+        this.price = price;
+        this.qty = qty;
+        this.unit = unit;
+    }
+
+    // Getters and Setters if needed
+    public String getName() { return name; }
+    public double getPrice() { return price; }
+    public int getQty() { return qty; }
+    public String getUnit() { return unit; }
+}

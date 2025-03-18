@@ -1,0 +1,10 @@
+package com.pizzashop.model;
+
+public class Order {
+    private Customer customer;
+    private Pizza pizza;
+    private String orderId;
+    private static int orderCounter = 0;
+
+   
+}

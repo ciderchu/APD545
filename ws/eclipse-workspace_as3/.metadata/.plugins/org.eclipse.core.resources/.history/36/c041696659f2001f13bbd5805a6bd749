@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.pizzashop.controller.OrderController">
+
+    <!-- Left Sidebar -->
+    <left>
+        <VBox spacing="10" alignment="TOP_CENTER" prefWidth="200" style="-fx-background-color: darkgreen;">
+            <Label text="Pizza Shop" style="-fx-font-size: 24px; -fx-text-fill: white; -fx-font-weight: bold;" />
+            <ImageView fitWidth="40" fitHeight="40">
+                <image>
+                    <Image url="@/com/pizzashop/view/pizza.png" />
+                </image>
+            </ImageView>
+            <Label text="Name" style="-fx-text-fill: white;" />
+            <TextField fx:id="nameField" />
+            <Label text="Phone" style="-fx-text-fill: white;" />
+            <TextField fx:id="phoneField" />
+        </VBox>
+    </left>
+
+    <!-- Main Content -->
+    <center>
+        <VBox spacing="15" padding="20" style="-fx-background-color: royalblue;">
+            <HBox spacing="10">
+                <VBox spacing="5">
+                    <Label text="Type" style="-fx-text-fill: white;" />
+                    <RadioButton text="Cheese" fx:id="cheeseRadio" />
+                    <RadioButton text="Vegetarian" fx:id="vegetarianRadio" />
+                    <RadioButton text="Meat 

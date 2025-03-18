@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<item key="hasShownOverlayPopupBefore" value="true"/>
+	<section name="java.lang.Class">
+		<item key="replaceBarOpen" value="false"/>
+		<list key="findhistory">
+			<item value="totalPriceLabel.textProperty()"/>
+			<item value="quantitySlider"/>
+			<item value="unitPriceLabel"/>
+			<item value="selectedQuantityLabel"/>
+			<item value="quantityColumn"/>
+		</list>
+	</section>
+</section>

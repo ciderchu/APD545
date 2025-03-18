@@ -1,0 +1,49 @@
+package com.groceryapp.model;
+
+import javafx.collections.FXCollections;
+import java.io.File;  
+import javafx.collections.ObservableList;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+public class ItemModel {
+    private ObservableList<Item> itemsList = FXCollections.observableArrayList();
+
+    public void loadData() {
+        // Debug path check
+        File file = new File("ItemsMaster.csv");
+        System.out.println("Looking for CSV at: " + file.getAbsolutePath());
+        System.out.println("File exists? " + file.exists());
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                // Split line into parts
+                String[] parts = line.split(",");
+
+                // Check that we have at least 4 columns
+                if (parts.length >= 4) {
+                    // Parse each field
+                    String name = parts[0];
+                    double price = Double.parseDouble(parts[1]);
+                    int quantity = Integer.parseInt(parts[2]);
+                    String unit = parts[3];
+
+                    // Create an Item object and add to the observable list
+                    itemsList.add(new Item(name, price, quantity, unit));
+                } else {
+                    // Optional: handle malformed lines
+                    System.err.println("Skipping invalid line (missing columns): " + line);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public ObservableList<Item> getItemsList() {
+        return itemsList;
+    }
+}

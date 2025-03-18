@@ -1,0 +1,21 @@
+package com.pizzashop.view;
+
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.Parent;
+import javafx.stage.Stage;
+
+public class PizzaShopApp extends Application {
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        Parent root = FXMLLoader.load(getClass().getResource("/com/pizzashop/view/MainView.fxml"));
+        primaryStage.setScene(new Scene(root, 600, 400));
+        primaryStage.setTitle("Pizza Shop");
+        primaryStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
