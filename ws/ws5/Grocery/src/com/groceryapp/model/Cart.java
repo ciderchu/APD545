@@ -1,0 +1,92 @@
+/**********************************************
+Workshop #5
+Course: APD545
+Last Name: Chu
+First Name: Sin Kau
+ID: 155131220
+Section: NDD
+This assignment represents my own work in accordance with Seneca Academic Policy.
+Signature Sin Kau Chu
+Date: 16-Mar-2025
+**********************************************/
+
+package com.groceryapp.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Cart implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
+    private int cartId;
+    private List<Item> items;
+    private double totalPrice;
+    private boolean completed;
+    
+    public Cart(int cartId) {
+        this.cartId = cartId;
+        this.items = new ArrayList<>();
+        this.totalPrice = 0.0;
+        this.completed = false;
+    }
+    
+    public void addItem(Item item) {
+        // Check if item already exists in cart
+        for (Item cartItem : items) {
+            if (cartItem.getName().equals(item.getName())) {
+                // Update quantity instead of adding duplicate
+                cartItem.setQuantity(cartItem.getQuantity() + item.getQuantity());
+                calculateTotalPrice();
+                return;
+            }
+        }
+        
+        // Add new item
+        items.add(item);
+        calculateTotalPrice();
+    }
+    
+    public void removeItem(Item item) {
+        items.remove(item);
+        calculateTotalPrice();
+    }
+    
+    private void calculateTotalPrice() {
+        totalPrice = 0.0;
+        for (Item item : items) {
+            totalPrice += item.getPrice() * item.getQuantity();
+        }
+    }
+    
+    // Getters and setters
+    public int getCartId() {
+        return cartId;
+    }
+    
+    public List<Item> getItems() {
+        return items;
+    }
+    
+    public double getTotalPrice() {
+        return totalPrice;
+    }
+    
+    public boolean isCompleted() {
+        return completed;
+    }
+    
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+    }
+    
+    public void clearItems() {
+        items.clear();
+        totalPrice = 0.0;
+    }
+    
+    @Override
+    public String toString() {
+        return "Cart #" + cartId + " - $" + String.format("%.2f", totalPrice);
+    }
+}
