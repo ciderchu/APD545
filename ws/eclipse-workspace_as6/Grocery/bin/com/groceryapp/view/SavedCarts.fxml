@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="com.groceryapp.controller.SavedCartsController"
+    prefWidth="400" prefHeight="300">
+    
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+    
+    <top>
+        <Label text="List of Saved Carts" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+    </top>
+    
+    <center>
+        <TableView fx:id="cartsTableView">
+            <columns>
+                <TableColumn fx:id="cartIdColumn" text="Cart #" prefWidth="150"/>
+                <TableColumn fx:id="priceColumn" text="Price" prefWidth="150"/>
+            </columns>
+        </TableView>
+    </center>
+    
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_RIGHT">
+            <padding>
+                <Insets top="10" />
+            </padding>
+            <Button fx:id="loadCartButton" text="Load Cart" />
+        </HBox>
+    </bottom>
+</BorderPane>
