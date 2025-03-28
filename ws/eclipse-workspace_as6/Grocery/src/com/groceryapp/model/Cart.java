@@ -31,8 +31,12 @@ public class Cart implements Serializable {
         this.completed = false;
     }
     
+    public void setCartId(int cartId) {
+        this.cartId = cartId;
+    }
+    
     public void addItem(Item item) {
-        // Check if item already exists in cart
+        // checking if item already exists in cart
         for (Item cartItem : items) {
             if (cartItem.getName().equals(item.getName())) {
                 // Update quantity instead of adding duplicate
@@ -42,7 +46,7 @@ public class Cart implements Serializable {
             }
         }
         
-        // Add new item
+        // adding new item
         items.add(item);
         calculateTotalPrice();
     }
@@ -59,7 +63,7 @@ public class Cart implements Serializable {
         }
     }
     
-    // Getters and setters
+    // getters and setters
     public int getCartId() {
         return cartId;
     }

@@ -1,5 +1,5 @@
 /**********************************************
-Workshop #5
+Workshop #6
 Course: APD545
 Last Name: Chu
 First Name: Sin Kau
@@ -7,15 +7,15 @@ ID: 155131220
 Section: NDD
 This assignment represents my own work in accordance with Seneca Academic Policy.
 Signature Sin Kau Chu
-Date: 16-Mar-2025
+Date: 27-Mar-2025
 **********************************************/
 
 package com.groceryapp.controller;
 
 import com.groceryapp.model.Cart;
-import com.groceryapp.model.CartManager;
 import com.groceryapp.model.Item;
 import com.groceryapp.model.ItemModel;
+import com.groceryapp.model.JdbcDao;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -31,6 +31,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Optional;
 
 public class CartController {
@@ -38,6 +39,7 @@ public class CartController {
     @FXML private Slider quantitySlider;
     @FXML private Label unitPriceLabel, totalPriceLabel;
     @FXML private Button addToCartButton, removeButton, saveCartButton, checkoutButton, viewSavedCartsButton;
+    @FXML private Button loadCartFromDBButton; // New button for loading cart from DB
     @FXML private TableView<Item> cartTableView;
     @FXML private TableColumn<Item, String> itemColumn;
     @FXML private TableColumn<Item, Double> priceColumn;
@@ -46,17 +48,27 @@ public class CartController {
     @FXML private Label purchasedUnitsLabel;
     @FXML private Label unitLabel;
     @FXML private Label cartIdLabel;
+    @FXML private Label welcomeLabel; // New label to welcome the user
  
     private ItemModel itemModel = new ItemModel();
     private ObservableList<Item> cartItems = FXCollections.observableArrayList();
     private Cart currentCart;
     private SimpleDoubleProperty totalPrice = new SimpleDoubleProperty(0.0);
+    private int userId; // Store the logged-in user's ID
+
+    // Initialize with user ID
+    public void initData(int userId) {
+        this.userId = userId;
+        createNewCart();
+        
+        // Update welcome message if needed
+        if (welcomeLabel != null) {
+            welcomeLabel.setText("Welcome to Grocery Store! User ID: " + userId);
+        }
+    }
 
     @FXML
     public void initialize() {
-        // Create a new cart
-        createNewCart();
-        
         // load data into the combo box
         itemModel.loadData();
         itemsComboBox.setItems(itemModel.getItemsList());
@@ -98,28 +110,43 @@ public class CartController {
             purchasedUnitsLabel.setText(String.format("%.0f", newVal.doubleValue()));
         });
         
-        // Set up button event handlers
+        // set up button event handlers
         addToCartButton.setOnAction(e -> addToCart());
         removeButton.setOnAction(e -> removeFromCart());
         saveCartButton.setOnAction(e -> saveCart());
         checkoutButton.setOnAction(e -> checkoutCart());
         viewSavedCartsButton.setOnAction(e -> openSavedCartsWindow());
+        
+        // add handler for the new load cart from DB button
+        if (loadCartFromDBButton != null) {
+            loadCartFromDBButton.setOnAction(e -> openSavedCartsWindow());
+        }
 
-        // Bind total price to the label with formatting
+        // binding total price to the label with formatting
         totalPriceLabel.textProperty().bind(
             Bindings.createStringBinding(() -> 
                 String.format("$%.2f", totalPrice.get()), totalPrice)
         );
         
-        // Set the TableView items
+        // setting the TableView items
         cartTableView.setItems(cartItems);
     }
 
     private void createNewCart() {
-        currentCart = new Cart(CartManager.getNextCartId());
-        cartItems.clear();
-        updateCartIdLabel();
-        updateTotalPrice();
+        try {
+            // getting the next cart ID from database for this user
+            JdbcDao jdbcDao = new JdbcDao();
+            int nextCartId = jdbcDao.getNextCartId(userId);
+            
+            currentCart = new Cart(nextCartId);
+            cartItems.clear();
+            updateCartIdLabel();
+            updateTotalPrice();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, "Database Error", 
+                "Could not create a new cart: " + e.getMessage());
+        }
     }
     
     private void updateCartIdLabel() {
@@ -138,7 +165,7 @@ public class CartController {
                 return;
             }
 
-            // check if item exists in the cart and update quantity
+            // checking if item exists in the cart and update quantity
             for (Item cartItem : cartItems) {
                 if (cartItem.getName().equals(selectedItem.getName())) {
                     cartItem.setQuantity(cartItem.getQuantity() + quantityToBuy);
@@ -148,7 +175,7 @@ public class CartController {
                 }
             }
 
-            // create new item and add to cart
+            // creating new item and add to cart
             Item itemForCart = new Item(
                 selectedItem.getName(),
                 selectedItem.getUnit(),
@@ -161,7 +188,7 @@ public class CartController {
         }
     }
 
-    // Method to update total price
+    // method to update total price
     private void updateTotalPrice() {
         double total = 0.0;
         for (Item item : cartItems) {
@@ -178,32 +205,39 @@ public class CartController {
         }
     }
     
-    // Save current cart
+    // saving current cart to database
     private void saveCart() {
         if (cartItems.isEmpty()) {
             showAlert(AlertType.WARNING, "Empty Cart", "Your cart is empty. Please add items before saving.");
             return;
         }
         
-        // Update current cart with items
+        // updating current cart with items
         currentCart.getItems().clear();  // Clear previous items
         for (Item item : cartItems) {
             currentCart.addItem(new Item(item.getName(), item.getUnit(), item.getQuantity(), item.getPrice()));
         }
         
-        // Save cart to file
+        // saving cart to database
         try {
-            CartManager.saveCart(currentCart);
-            showAlert(AlertType.INFORMATION, "Cart Saved", 
-                "Cart #" + currentCart.getCartId() + " has been saved successfully.");
-        } catch (Exception e) {
-            showAlert(AlertType.ERROR, "Save Error", 
-                "Could not save cart: " + e.getMessage());
+            JdbcDao jdbcDao = new JdbcDao();
+            boolean success = jdbcDao.saveCart(currentCart, userId);
+            
+            if (success) {
+                showAlert(AlertType.INFORMATION, "Cart Saved", 
+                    "Cart #" + currentCart.getCartId() + " has been saved successfully to the database.");
+            } else {
+                showAlert(AlertType.ERROR, "Save Error", 
+                    "Could not save cart to database.");
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
+            showAlert(AlertType.ERROR, "Database Error", 
+                "Could not save cart: " + e.getMessage());
         }
     }
     
-    // Checkout cart
+    // checking out cart
     private void checkoutCart() {
         if (cartItems.isEmpty()) {
             showAlert(AlertType.WARNING, "Empty Cart", "Your cart is empty. Please add items before checking out.");
@@ -218,31 +252,37 @@ public class CartController {
         
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Update cart in file as completed
-            currentCart.getItems().clear();  // Clear previous items
+            // updating cart in database as completed
+            currentCart.getItems().clear();  // clearing previous items
             for (Item item : cartItems) {
                 currentCart.addItem(new Item(item.getName(), item.getUnit(), item.getQuantity(), item.getPrice()));
             }
             currentCart.setCompleted(true);
             
             try {
-                CartManager.saveCart(currentCart);
+                JdbcDao jdbcDao = new JdbcDao();
+                boolean success = jdbcDao.saveCart(currentCart, userId);
                 
-                // Clear cart and create a new one
-                cartItems.clear();
-                createNewCart();
-                
-                showAlert(AlertType.INFORMATION, "Checkout Complete", 
-                    "Thank you for your purchase! Your cart has been checked out.");
-            } catch (Exception e) {
-                showAlert(AlertType.ERROR, "Checkout Error", 
-                    "Could not complete checkout: " + e.getMessage());
+                if (success) {
+                    // clearing cart and create a new one
+                    cartItems.clear();
+                    createNewCart();
+                    
+                    showAlert(AlertType.INFORMATION, "Checkout Complete", 
+                        "Thank you for your purchase! Your cart has been checked out.");
+                } else {
+                    showAlert(AlertType.ERROR, "Checkout Error", 
+                        "Could not complete checkout in database.");
+                }
+            } catch (SQLException e) {
                 e.printStackTrace();
+                showAlert(AlertType.ERROR, "Database Error", 
+                    "Could not complete checkout: " + e.getMessage());
             }
         }
     }
     
-    // Open saved carts window
+    // opening saved carts window
     private void openSavedCartsWindow() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/groceryapp/view/SavedCarts.fxml"));
@@ -250,6 +290,8 @@ public class CartController {
             
             SavedCartsController controller = loader.getController();
             controller.setMainController(this);
+            controller.setUserId(userId); // Pass the user ID
+            controller.loadSavedCarts(); // Load carts for this user
             
             Stage stage = new Stage();
             stage.setTitle("Saved Carts");
@@ -262,12 +304,12 @@ public class CartController {
         }
     }
     
-    // Load a saved cart
+    // loading a saved cart
     public void loadCart(Cart cart) {
         this.currentCart = cart;
         cartItems.clear();
         
-        // Add deep copies of each item in the cart
+        // adding deep copies of each item in the cart
         for (Item item : cart.getItems()) {
             cartItems.add(new Item(item.getName(), item.getUnit(), item.getQuantity(), item.getPrice()));
         }
@@ -276,7 +318,7 @@ public class CartController {
         updateTotalPrice();
     }
     
-    // Show alert dialog
+    // showing alert dialog
     private void showAlert(AlertType type, String title, String message) {
         Alert alert = new Alert(type);
         alert.setTitle(title);

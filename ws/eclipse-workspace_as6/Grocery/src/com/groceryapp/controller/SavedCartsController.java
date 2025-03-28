@@ -1,5 +1,5 @@
 /**********************************************
-Workshop #5
+Workshop #6
 Course: APD545
 Last Name: Chu
 First Name: Sin Kau
@@ -7,13 +7,13 @@ ID: 155131220
 Section: NDD
 This assignment represents my own work in accordance with Seneca Academic Policy.
 Signature Sin Kau Chu
-Date: 16-Mar-2025
+Date: 27-Mar-2025
 **********************************************/
 
 package com.groceryapp.controller;
 
 import com.groceryapp.model.Cart;
-import com.groceryapp.model.CartManager;
+import com.groceryapp.model.JdbcDao;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -26,6 +26,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 
+import java.sql.SQLException;
+
 public class SavedCartsController {
     @FXML private TableView<Cart> cartsTableView;
     @FXML private TableColumn<Cart, Number> cartIdColumn;
@@ -34,17 +36,22 @@ public class SavedCartsController {
     
     private ObservableList<Cart> cartsList = FXCollections.observableArrayList();
     private CartController mainController;
+    private int userId; // Store the user ID
+    
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
     
     @FXML
     public void initialize() {
-        // Set up table columns
+        // setting up table columns
         cartIdColumn.setCellValueFactory(cellData -> 
             new SimpleIntegerProperty(cellData.getValue().getCartId()));
         
         priceColumn.setCellValueFactory(cellData -> 
             new SimpleDoubleProperty(cellData.getValue().getTotalPrice()));
         
-        // Format price column as currency
+        // formating price column as currency
         priceColumn.setCellFactory(col -> new javafx.scene.control.TableCell<Cart, Number>() {
             @Override
             protected void updateItem(Number price, boolean empty) {
@@ -57,11 +64,10 @@ public class SavedCartsController {
             }
         });
         
-        // Load button action
+        // loading button action
         loadCartButton.setOnAction(e -> loadSelectedCart());
         
-        // Load saved carts
-        loadSavedCarts();
+        cartsTableView.setItems(cartsList);
     }
     
     public void setMainController(CartController controller) {
@@ -71,12 +77,15 @@ public class SavedCartsController {
     public void loadSavedCarts() {
         try {
             cartsList.clear();
-            cartsList.addAll(CartManager.getIncompleteCarts());
-            cartsTableView.setItems(cartsList);
-        } catch (Exception e) {
-            showAlert(AlertType.ERROR, "Error", 
-                "Could not load saved carts: " + e.getMessage());
+            
+            // getting incomplete carts from database
+            JdbcDao jdbcDao = new JdbcDao();
+            cartsList.addAll(jdbcDao.getIncompleteCarts(userId));
+            
+        } catch (SQLException e) {
             e.printStackTrace();
+            showAlert(AlertType.ERROR, "Database Error", 
+                "Could not load saved carts: " + e.getMessage());
         }
     }
     
