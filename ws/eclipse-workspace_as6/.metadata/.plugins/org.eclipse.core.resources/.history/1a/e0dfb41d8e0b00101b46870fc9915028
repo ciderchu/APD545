@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.groceryapp.controller.RegisterController"
+            prefWidth="450" prefHeight="400">
+    
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    
+    <top>
+        <VBox alignment="CENTER" spacing="10">
+            <Label text="Grocery Store Application" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+            <Label text="Create a new account" style="-fx-font-size: 14;"/>
+        </VBox>
+    </top>
+    
+    <center>
+        <VBox spacing="15" alignment="CENTER">
+            <padding>
+                <Insets top="20" />
+            </padding>
+            
+            <!-- Full Name field -->
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Full Name:" prefWidth="120" />
+                <TextField fx:id="fullNameField" prefWidth="200" />
+            </HBox>
+            
+            <!-- Email field -->
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Email:" prefWidth="120" />
+                <TextField fx:id="emailField" prefWidth="200" />
+            </HBox>
+            
+            <!-- Username field -->
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Username:" prefWidth="120" />
+                <TextField fx:id="usernameField" prefWidth="200" />
+            </HBox>
+            
+            <!-- Password field -->
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Password:" prefWidth="120" />
+                <PasswordField fx:id="passwordField" prefWidth="200" />
+            </HBox>
+            
+            <!-- Confirm Password field -->
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Confirm Password:" prefWidth="120" />
+                <PasswordField fx:id="confirmPasswordField" prefWidth="200" />
+            </HBox>
+        </VBox>
+    </center>
+    
+    <bottom>
+        <HBox spacing="10" alignment="CENTER">
+            <padding>
+                <Insets top="20" />
+            </padding>
+            <Button fx:id="registerButton" text="Register" prefWidth="100" />
+            <Button fx:id="backToLoginButton" text="Back to Login" prefWidth="120" />
+        </HBox>
+    </bottom>
+</BorderPane>

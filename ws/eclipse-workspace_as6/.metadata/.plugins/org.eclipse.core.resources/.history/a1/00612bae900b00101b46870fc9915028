@@ -1,0 +1,158 @@
+/**********************************************
+Workshop #6
+Course: APD545
+Last Name: Chu
+First Name: Sin Kau
+ID: 155131220
+Section: NDD
+This assignment represents my own work in accordance with Seneca Academic Policy.
+Signature Sin Kau Chu
+Date: 27-Mar-2025
+**********************************************/
+
+package com.groceryapp.controller;
+
+import com.groceryapp.model.JdbcDao;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
+import java.io.IOException;
+import java.sql.SQLException;
+
+public class RegisterController {
+    
+    @FXML private TextField fullNameField;
+    @FXML private TextField emailField;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private PasswordField confirmPasswordField;
+    @FXML private Button registerButton;
+    @FXML private Button backToLoginButton;
+    
+    @FXML
+    public void initialize() {
+        // setting event handlers
+        registerButton.setOnAction(event -> {
+            try {
+                handleRegistration(event);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                showAlert(AlertType.ERROR, registerButton.getScene().getWindow(), 
+                    "Database Error", "Error connecting to database: " + e.getMessage());
+            }
+        });
+        
+        backToLoginButton.setOnAction(event -> openLoginPage());
+    }
+    
+    private void handleRegistration(ActionEvent event) throws SQLException {
+        Window owner = registerButton.getScene().getWindow();
+        
+        // validating input - all fields are required
+        if (fullNameField.getText().isEmpty()) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Please enter your full name");
+            return;
+        }
+        
+        if (emailField.getText().isEmpty()) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Please enter your email");
+            return;
+        }
+        
+        if (usernameField.getText().isEmpty()) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Please enter a username");
+            return;
+        }
+        
+        if (passwordField.getText().isEmpty()) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Please enter a password");
+            return;
+        }
+        
+        if (confirmPasswordField.getText().isEmpty()) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Please confirm your password");
+            return;
+        }
+        
+        // validating password matching
+        if (!passwordField.getText().equals(confirmPasswordField.getText())) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Passwords do not match");
+            return;
+        }
+        
+        // validating email format (simple check)
+        String email = emailField.getText();
+        if (!email.contains("@") || !email.contains(".")) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Please enter a valid email address");
+            return;
+        }
+        
+        // validating username and email uniqueness
+        JdbcDao jdbcDao = new JdbcDao();
+        
+        if (jdbcDao.usernameExists(usernameField.getText())) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Username already exists");
+            return;
+        }
+        
+        if (jdbcDao.emailExists(emailField.getText())) {
+            showAlert(AlertType.ERROR, owner, "Registration Error", "Email already registered");
+            return;
+        }
+        
+        // registering the user
+        boolean success = jdbcDao.registerUser(
+            usernameField.getText(),
+            passwordField.getText(),
+            fullNameField.getText(),
+            emailField.getText()
+        );
+        
+        if (success) {
+            showAlert(AlertType.INFORMATION, owner, "Registration Successful", 
+                "Your account has been created successfully. You can now log in.");
+            
+            // Go back to login page
+            openLoginPage();
+        } else {
+            showAlert(AlertType.ERROR, owner, "Registration Failed", 
+                "An error occurred during registration. Please try again.");
+        }
+    }
+    
+    private void openLoginPage() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/groceryapp/view/Login.fxml"));
+            Parent loginRoot = loader.load();
+            
+            Stage stage = (Stage) backToLoginButton.getScene().getWindow();
+            stage.setTitle("Login");
+            Scene scene = new Scene(loginRoot);
+            stage.setScene(scene);
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, backToLoginButton.getScene().getWindow(), 
+                "Navigation Error", "Could not open login page: " + e.getMessage());
+        }
+    }
+    
+    private void showAlert(AlertType alertType, Window owner, String title, String message) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.initOwner(owner);
+        alert.showAndWait();
+    }
+}

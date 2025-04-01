@@ -1,0 +1,482 @@
+/**********************************************
+Workshop #6
+Course: APD545
+Last Name: Chu
+First Name: Sin Kau
+ID: 155131220
+Section: NDD
+This assignment represents my own work in accordance with Seneca Academic Policy.
+Signature Sin Kau Chu
+Date: 27-Mar-2025
+**********************************************/
+
+package com.groceryapp.model;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+public class JdbcDao {
+    // connection database and its parameters
+    private static final String DATABASE_URL = "jdbc:mysql://localhost:3306/grocery_app?useSSL=false";
+    private static final String DATABASE_USERNAME = "root"; // Change to your MySQL username
+    private static final String DATABASE_PASSWORD = "Rg01151021!"; // Change to your MySQL password
+    
+    // SQL queries
+    private static final String INSERT_USER_QUERY = 
+        "INSERT INTO users (username, password, first_name, last_name, email) VALUES (?, ?, ?, ?, ?)";
+    
+    private static final String AUTHENTICATE_USER_QUERY = 
+        "SELECT user_id FROM users WHERE username = ? AND password = ?";
+    
+    private static final String CHECK_USERNAME_QUERY = 
+        "SELECT COUNT(*) FROM users WHERE username = ?";
+    
+    private static final String CHECK_EMAIL_QUERY = 
+        "SELECT COUNT(*) FROM users WHERE email = ?";
+    
+    private static final String INSERT_CART_QUERY = 
+        "INSERT INTO carts (user_id, total_price, completed) VALUES (?, ?, ?)";
+    
+    private static final String UPDATE_CART_QUERY = 
+        "UPDATE carts SET total_price = ?, completed = ? WHERE cart_id = ? AND user_id = ?";
+    
+    private static final String DELETE_CART_ITEMS_QUERY = 
+        "DELETE FROM cart_items WHERE cart_id = ?";
+    
+    private static final String INSERT_CART_ITEM_QUERY = 
+        "INSERT INTO cart_items (cart_id, name, unit, quantity, price) VALUES (?, ?, ?, ?, ?)";
+    
+    private static final String GET_INCOMPLETE_CARTS_QUERY = 
+        "SELECT * FROM carts WHERE user_id = ? AND completed = FALSE";
+    
+    private static final String GET_CART_ITEMS_QUERY = 
+        "SELECT * FROM cart_items WHERE cart_id = ?";
+    
+    private static final String GET_CART_QUERY = 
+        "SELECT * FROM carts WHERE cart_id = ? AND user_id = ?";
+    
+    private static final String GET_MAX_CART_ID_QUERY = 
+        "SELECT MAX(cart_id) FROM carts WHERE user_id = ?";
+
+    // registering a new user
+    public boolean registerUser(String username, String password, String fullName, String email) 
+            throws SQLException {
+        
+        // parsing full name into first and last name
+        String[] nameParts = fullName.split(" ", 2);
+        String firstName = nameParts[0];
+        String lastName = nameParts.length > 1 ? nameParts[1] : "";
+        
+        // hashing password (in a real app, use a better hashing algorithm)
+        String hashedPassword = hashPassword(password);
+        
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(INSERT_USER_QUERY)) {
+            
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, hashedPassword);
+            preparedStatement.setString(3, firstName);
+            preparedStatement.setString(4, lastName);
+            preparedStatement.setString(5, email);
+            
+            int rowsAffected = preparedStatement.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+    }
+    
+    // authen a user
+    public int authenticateUser(String username, String password) throws SQLException {
+        String hashedPassword = hashPassword(password);
+        
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(AUTHENTICATE_USER_QUERY)) {
+            
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, hashedPassword);
+            
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt("user_id");
+                }
+            }
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+        
+        return -1; // authen failed
+    }
+    
+    // checking if username exists
+    public boolean usernameExists(String username) throws SQLException {
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(CHECK_USERNAME_QUERY)) {
+            
+            preparedStatement.setString(1, username);
+            
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1) > 0;
+                }
+            }
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+        
+        return false;
+    }
+    
+    // checking if email exists
+    public boolean emailExists(String email) throws SQLException {
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(CHECK_EMAIL_QUERY)) {
+            
+            preparedStatement.setString(1, email);
+            
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1) > 0;
+                }
+            }
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+        
+        return false;
+    }
+    
+    // saving a cart to the database
+    public boolean saveCart(Cart cart, int userId) throws SQLException {
+        Connection connection = null;
+        PreparedStatement cartStmt = null;
+        PreparedStatement itemsStmt = null;
+        ResultSet generatedKeys = null;
+        
+        try {
+            connection = DriverManager.getConnection(DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+            connection.setAutoCommit(false); // Start transaction
+            
+            // inserting or update cart
+            if (cart.getCartId() > 0) {
+                // Update existing cart
+                cartStmt = connection.prepareStatement(UPDATE_CART_QUERY);
+                cartStmt.setDouble(1, cart.getTotalPrice());
+                cartStmt.setBoolean(2, cart.isCompleted());
+                cartStmt.setInt(3, cart.getCartId());
+                cartStmt.setInt(4, userId);
+                cartStmt.executeUpdate();
+                
+                //deleting existing items
+                try (PreparedStatement deleteStmt = connection.prepareStatement(DELETE_CART_ITEMS_QUERY)) {
+                    deleteStmt.setInt(1, cart.getCartId());
+                    deleteStmt.executeUpdate();
+                }
+                
+            } else {
+                //inserting new cart
+                cartStmt = connection.prepareStatement(INSERT_CART_QUERY, Statement.RETURN_GENERATED_KEYS);
+                cartStmt.setInt(1, userId);
+                cartStmt.setDouble(2, cart.getTotalPrice());
+                cartStmt.setBoolean(3, cart.isCompleted());
+                cartStmt.executeUpdate();
+                
+                generatedKeys = cartStmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    cart.setCartId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Failed to get cart ID, no rows affected.");
+                }
+            }
+            
+            //inserting cart items
+            itemsStmt = connection.prepareStatement(INSERT_CART_ITEM_QUERY);
+            for (Item item : cart.getItems()) {
+                itemsStmt.setInt(1, cart.getCartId());
+                itemsStmt.setString(2, item.getName());
+                itemsStmt.setString(3, item.getUnit());
+                itemsStmt.setDouble(4, item.getQuantity());
+                itemsStmt.setDouble(5, item.getPrice());
+                itemsStmt.addBatch();
+            }
+            
+            itemsStmt.executeBatch();
+            connection.commit();
+            return true;
+            
+        } catch (SQLException e) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException ex) {
+                    printSQLException(ex);
+                }
+            }
+            printSQLException(e);
+            throw e;
+        } finally {
+            if (generatedKeys != null) try { generatedKeys.close(); } catch (SQLException e) { /* ignore */ }
+            if (itemsStmt != null) try { itemsStmt.close(); } catch (SQLException e) { /* ignore */ }
+            if (cartStmt != null) try { cartStmt.close(); } catch (SQLException e) { /* ignore */ }
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException e) { /* ignore */ }
+            }
+        }
+    }
+    
+    //getting incomplete carts for a user
+    public List<Cart> getIncompleteCarts(int userId) throws SQLException {
+        List<Cart> carts = new ArrayList<>();
+        
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement cartStmt = connection.prepareStatement(GET_INCOMPLETE_CARTS_QUERY)) {
+            
+            cartStmt.setInt(1, userId);
+            
+            try (ResultSet cartRS = cartStmt.executeQuery()) {
+                while (cartRS.next()) {
+                    int cartId = cartRS.getInt("cart_id");
+                    Cart cart = new Cart(cartId);
+                    cart.setCompleted(cartRS.getBoolean("completed"));
+                    
+                    // getting items for this cart
+                    try (PreparedStatement itemsStmt = connection.prepareStatement(GET_CART_ITEMS_QUERY)) {
+                        itemsStmt.setInt(1, cartId);
+                        
+                        try (ResultSet itemsRS = itemsStmt.executeQuery()) {
+                            while (itemsRS.next()) {
+                                Item item = new Item(
+                                    itemsRS.getString("name"),
+                                    itemsRS.getString("unit"),
+                                    itemsRS.getDouble("quantity"),
+                                    itemsRS.getDouble("price")
+                                );
+                                cart.addItem(item);
+                            }
+                        }
+                    }
+                    
+                    carts.add(cart);
+                }
+            }
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+        
+        return carts;
+    }
+    
+    //loading a specific cart
+    public Cart loadCart(int cartId, int userId) throws SQLException {
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement cartStmt = connection.prepareStatement(GET_CART_QUERY)) {
+            
+            cartStmt.setInt(1, cartId);
+            cartStmt.setInt(2, userId);
+            
+            try (ResultSet cartRS = cartStmt.executeQuery()) {
+                if (cartRS.next()) {
+                    Cart cart = new Cart(cartId);
+                    cart.setCompleted(cartRS.getBoolean("completed"));
+                    
+                    //getting items for this cart
+                    try (PreparedStatement itemsStmt = connection.prepareStatement(GET_CART_ITEMS_QUERY)) {
+                        itemsStmt.setInt(1, cartId);
+                        
+                        try (ResultSet itemsRS = itemsStmt.executeQuery()) {
+                            while (itemsRS.next()) {
+                                Item item = new Item(
+                                    itemsRS.getString("name"),
+                                    itemsRS.getString("unit"),
+                                    itemsRS.getDouble("quantity"),
+                                    itemsRS.getDouble("price")
+                                );
+                                cart.addItem(item);
+                            }
+                        }
+                    }
+                    
+                    return cart;
+                }
+            }
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+        
+        return null;
+    }
+    
+    // marking a cart as completed
+    public boolean completeCart(int cartId, int userId) throws SQLException {
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_CART_QUERY)) {
+            
+            // getting the cart first to preserve total_price
+            Cart cart = loadCart(cartId, userId);
+            if (cart == null) {
+                return false;
+            }
+            
+            preparedStatement.setDouble(1, cart.getTotalPrice());
+            preparedStatement.setBoolean(2, true); 
+            preparedStatement.setInt(3, cartId);
+            preparedStatement.setInt(4, userId);
+            
+            int rowsAffected = preparedStatement.executeUpdate();
+            return rowsAffected > 0;
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+    }
+    
+    // getting the next cart ID for a user
+    public int getNextCartId(int userId) throws SQLException {
+        try (Connection connection = DriverManager.getConnection(
+                DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(GET_MAX_CART_ID_QUERY)) {
+            
+            preparedStatement.setInt(1, userId);
+            
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    int maxId = resultSet.getInt(1);
+                    return maxId + 1;
+                }
+            }
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+            throw e;
+        }
+        
+        return 1; // First cart for this user
+    }
+    
+    // Initialize database tables
+    public static void initializeDatabase() {
+        Connection conn = null;
+        Statement stmt = null;
+        
+        try {
+            conn = DriverManager.getConnection(DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD);
+            stmt = conn.createStatement();
+            
+            // Create users table
+            String createUsersTable = 
+                "CREATE TABLE IF NOT EXISTS users (" +
+                "user_id INT PRIMARY KEY AUTO_INCREMENT, " +
+                "username VARCHAR(50) NOT NULL UNIQUE, " +
+                "password VARCHAR(255) NOT NULL, " +
+                "first_name VARCHAR(50) NOT NULL, " +
+                "last_name VARCHAR(50) NOT NULL, " +
+                "email VARCHAR(100) NOT NULL UNIQUE, " +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                ")";
+            stmt.executeUpdate(createUsersTable);
+            
+            // Create carts table
+            String createCartsTable = 
+                "CREATE TABLE IF NOT EXISTS carts (" +
+                "cart_id INT PRIMARY KEY AUTO_INCREMENT, " +
+                "user_id INT NOT NULL, " +
+                "total_price DECIMAL(10,2) NOT NULL DEFAULT 0.00, " +
+                "completed BOOLEAN NOT NULL DEFAULT FALSE, " +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                "FOREIGN KEY (user_id) REFERENCES users(user_id)" +
+                ")";
+            stmt.executeUpdate(createCartsTable);
+            
+            // Create cart_items table
+            String createCartItemsTable = 
+                "CREATE TABLE IF NOT EXISTS cart_items (" +
+                "item_id INT PRIMARY KEY AUTO_INCREMENT, " +
+                "cart_id INT NOT NULL, " +
+                "name VARCHAR(100) NOT NULL, " +
+                "unit VARCHAR(50) NOT NULL, " +
+                "quantity DECIMAL(10,2) NOT NULL, " +
+                "price DECIMAL(10,2) NOT NULL, " +
+                "FOREIGN KEY (cart_id) REFERENCES carts(cart_id) ON DELETE CASCADE" +
+                ")";
+            stmt.executeUpdate(createCartItemsTable);
+            
+            System.out.println("Database tables created successfully.");
+            
+        } catch (SQLException e) {
+            printSQLException(e);
+        } finally {
+            try {
+                if (stmt != null) stmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                printSQLException(e);
+            }
+        }
+    }
+    
+    // Helper method to hash passwords (simple implementation)
+    private String hashPassword(String password) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes());
+            
+            // Convert byte array to hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error hashing password", e);
+        }
+    }
+    
+    // Print SQL exception details
+    private static void printSQLException(SQLException ex) {
+        for (Throwable e : ex) {
+            if (e instanceof SQLException) {
+                e.printStackTrace(System.err);
+                System.err.println("SQLState: " + ((SQLException) e).getSQLState());
+                System.err.println("Error Code: " + ((SQLException) e).getErrorCode());
+                System.err.println("Message: " + e.getMessage());
+                
+                Throwable t = ex.getCause();
+                while (t != null) {
+                    System.out.println("Cause: " + t);
+                    t = t.getCause();
+                }
+            }
+        }
+    }
+}
