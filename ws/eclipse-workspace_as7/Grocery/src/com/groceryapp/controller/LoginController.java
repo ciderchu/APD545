@@ -1,0 +1,143 @@
+/**********************************************
+Workshop #6
+Course: APD545
+Last Name: Chu
+First Name: Sin Kau
+ID: 155131220
+Section: NDD
+This assignment represents my own work in accordance with Seneca Academic Policy.
+Signature Sin Kau Chu
+Date: 27-Mar-2025
+**********************************************/
+
+package com.groceryapp.controller;
+
+import com.groceryapp.model.JdbcDao;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
+import java.io.IOException;
+import java.sql.SQLException;
+
+public class LoginController {
+    
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Button loginButton;
+    @FXML private Button registerButton;
+    @FXML private javafx.scene.control.Label statusLabel;
+    
+    private static int loggedInUserId = -1;
+    
+    public static int getLoggedInUserId() {
+        return loggedInUserId;
+    }
+    
+    @FXML
+    public void initialize() {
+        // setting event handlers
+        loginButton.setOnAction(event -> {
+            try {
+                handleLogin(event);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                showAlert(AlertType.ERROR, loginButton.getScene().getWindow(), 
+                    "Database Error", "Error connecting to database: " + e.getMessage());
+            }
+        });
+        
+        registerButton.setOnAction(event -> openRegisterPage());
+    }
+    
+    private void handleLogin(ActionEvent event) throws SQLException {
+        Window owner = loginButton.getScene().getWindow();
+        
+        // validating input
+        if (usernameField.getText().isEmpty()) {
+            showAlert(AlertType.ERROR, owner, "Login Error", "Please enter your username");
+            return;
+        }
+        
+        if (passwordField.getText().isEmpty()) {
+            showAlert(AlertType.ERROR, owner, "Login Error", "Please enter your password");
+            return;
+        }
+        
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        
+        // authen user
+        JdbcDao jdbcDao = new JdbcDao();
+        int userId = jdbcDao.authenticateUser(username, password);
+        
+        if (userId > 0) {
+            // authen successful
+            loggedInUserId = userId;
+            showAlert(AlertType.INFORMATION, owner, "Login Successful", 
+                    "Welcome back, " + username + "!");
+            
+            // calling grocery main screen
+            openGroceryApp();
+        } else {
+            // authen failed
+            statusLabel.setText("Invalid username or password");
+            passwordField.clear();
+        }
+    }
+    
+    private void openRegisterPage() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/groceryapp/view/Register.fxml"));
+            Parent registerRoot = loader.load();
+            
+            Stage stage = (Stage) registerButton.getScene().getWindow();
+            stage.setTitle("Register New User");
+            Scene scene = new Scene(registerRoot);
+            stage.setScene(scene);
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, registerButton.getScene().getWindow(), 
+                "Navigation Error", "Could not open registration page: " + e.getMessage());
+        }
+    }
+    
+    private void openGroceryApp() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/groceryapp/view/Grocery.fxml"));
+            Parent groceryRoot = loader.load();
+            
+            CartController controller = loader.getController();
+            controller.initData(loggedInUserId);
+            
+            Stage stage = (Stage) loginButton.getScene().getWindow();
+            stage.setTitle("Grocery Store");
+            Scene scene = new Scene(groceryRoot);
+            stage.setScene(scene);
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, loginButton.getScene().getWindow(), 
+                "Navigation Error", "Could not open grocery application: " + e.getMessage());
+        }
+    }
+    
+    private void showAlert(AlertType alertType, Window owner, String title, String message) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.initOwner(owner);
+        alert.showAndWait();
+    }
+}

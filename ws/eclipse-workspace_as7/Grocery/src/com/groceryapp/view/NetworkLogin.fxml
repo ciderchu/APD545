@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.groceryapp.client.NetworkLoginController"
+            prefWidth="450" prefHeight="350">
+    
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    
+    <top>
+        <VBox alignment="CENTER" spacing="10">
+            <Label text="Grocery Store Network Client" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+            <Label text="Connect to the server and login" style="-fx-font-size: 14;"/>
+            <Label fx:id="connectionStatusLabel" text="Not connected" style="-fx-text-fill: red;"/>
+        </VBox>
+    </top>
+    
+    <center>
+        <VBox spacing="15" alignment="CENTER">
+            <padding>
+                <Insets top="20" />
+            </padding>
+            
+            <!-- Username field -->
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Username:" prefWidth="80" />
+                <TextField fx:id="usernameField" prefWidth="200" />
+            </HBox>
+            
+            <!-- Password field -->
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Password:" prefWidth="80" />
+                <PasswordField fx:id="passwordField" prefWidth="200" />
+            </HBox>
+            
+            <!-- Status message -->
+            <Label fx:id="statusLabel" textFill="RED" />
+        </VBox>
+    </center>
+    
+    <bottom>
+        <HBox spacing="10" alignment="CENTER">
+            <padding>
+                <Insets top="20" />
+            </padding>
+            <Button fx:id="loginButton" text="Login" prefWidth="100" />
+            <Button fx:id="exitButton" text="Exit" prefWidth="100" />
+        </HBox>
+    </bottom>
+</BorderPane>
