@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class TransactionView extends VBox {
+public class TransactionView extends ScrollPane {
     private final VBox formBox;
     private final ObservableList<Transaction> transactions;
     private final TableView<Transaction> table;
@@ -52,15 +52,25 @@ public class TransactionView extends VBox {
     private ComboBox<Category> categoryComboBox;
     private DatePicker datePicker;
 
+    // Maximum number of transactions to display by default
+    private static final int MAX_DISPLAYED_TRANSACTIONS = 10;
+
     public TransactionView(User currentUser, TransactionController transactionController) {
         this.currentUser = currentUser;
         this.transactionController = transactionController;
         this.dbManager = DatabaseManager.getInstance();
         
-        setSpacing(20);
-        setPadding(new Insets(30));
-        setMinHeight(600);
-        setPrefWidth(USE_COMPUTED_SIZE);
+        // Make the entire view scrollable
+        this.setFitToWidth(true);
+        this.setPannable(true);
+        
+        // Main container
+        VBox mainContainer = new VBox(20);
+        mainContainer.setPadding(new Insets(30));
+        mainContainer.setMinHeight(600);
+        
+        // Set this ScrollPane's content to the mainContainer
+        this.setContent(mainContainer);
 
         Label title = new Label("Transactions");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
@@ -85,9 +95,11 @@ public class TransactionView extends VBox {
 
         table = new TableView<>(transactions);
         table.setPlaceholder(new Label("No transactions yet."));
+        
+        // Set fixed cell size and fixed height for exactly 10 rows + header
         table.setFixedCellSize(35);
-        // Fixed height to show 5 rows + header
-        table.setPrefHeight(5 * table.getFixedCellSize() + 30);
+        table.setPrefHeight(10 * table.getFixedCellSize() + 30);
+        table.setMinHeight(table.getPrefHeight());
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         TableColumn<Transaction, LocalDate> dateCol = new TableColumn<>("Date");
@@ -232,7 +244,7 @@ public class TransactionView extends VBox {
         summaryContainer.setAlignment(Pos.CENTER);
         summaryContainer.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-border-color: #DDD; -fx-border-radius: 5;");
         
-        getChildren().addAll(title, toggleFormBtn, tableContainer, summaryContainer, formBox);
+        mainContainer.getChildren().addAll(title, toggleFormBtn, tableContainer, summaryContainer, formBox);
         
         // Load initial data
         loadTransactions();

@@ -57,6 +57,7 @@ public class MainLayout extends BorderPane {
     }
 
     public void showTransactions() {
+        // Since TransactionView is now a ScrollPane itself, we need to handle it differently
         TransactionView transactionView = new TransactionView(currentUser, transactionController);
         contentArea.getChildren().setAll(transactionView);
     }

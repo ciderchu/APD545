@@ -11,7 +11,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
@@ -33,7 +32,6 @@ public class DashboardView extends VBox {
     private Label incomeLabel;
     private Label expenseLabel;
     private Label balanceLabel;
-    private PieChart expenseChart;
     private TableView<Transaction> recentTransactionsTable;
     private VBox budgetProgressBox;
 
@@ -52,21 +50,16 @@ public class DashboardView extends VBox {
         // Create income/expense/balance cards
         HBox summaryBox = createSummaryBox();
         
-        // Create charts section
-        HBox chartsBox = createChartsBox();
-        
         // Recent transactions
         VBox recentTransactionsBox = createRecentTransactionsBox();
         
         // Budget progress section
         VBox budgetBox = createBudgetProgressBox();
 
-        getChildren().addAll(title, summaryBox, chartsBox, recentTransactionsBox, budgetBox);
+        getChildren().addAll(title, summaryBox, recentTransactionsBox, budgetBox);
         
         // Load data
         loadDashboardData();
-        
-        
     }
 
     private HBox createSummaryBox() {
@@ -81,25 +74,6 @@ public class DashboardView extends VBox {
         return summaryBox;
     }
     
-    private HBox createChartsBox() {
-        HBox chartsBox = new HBox(20);
-        chartsBox.setAlignment(Pos.CENTER);
-        
-        // Expense distribution chart
-        expenseChart = new PieChart();
-        expenseChart.setTitle("Expense Distribution");
-        expenseChart.setLabelsVisible(true);
-        expenseChart.setLegendVisible(true);
-        expenseChart.setPrefSize(400, 300);
-        
-        VBox chartBox = new VBox(10, new Label("Expense Distribution"), expenseChart);
-        chartBox.setAlignment(Pos.CENTER);
-        chartBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-border-color: #DDD; -fx-border-radius: 5;");
-        
-        chartsBox.getChildren().add(chartBox);
-        return chartsBox;
-    }
-    
     private VBox createRecentTransactionsBox() {
         VBox recentTxnBox = new VBox(10);
         recentTxnBox.setAlignment(Pos.TOP_LEFT);
@@ -109,7 +83,11 @@ public class DashboardView extends VBox {
         
         recentTransactionsTable = new TableView<>();
         recentTransactionsTable.setPlaceholder(new Label("No recent transactions"));
-        recentTransactionsTable.setMaxHeight(200);
+        
+        // Set fixed height to show exactly 5 rows + header
+        recentTransactionsTable.setFixedCellSize(35);
+        recentTransactionsTable.setPrefHeight(5 * recentTransactionsTable.getFixedCellSize() + 30);
+        recentTransactionsTable.setMinHeight(recentTransactionsTable.getPrefHeight());
         recentTransactionsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         
         TableColumn<Transaction, LocalDate> dateCol = new TableColumn<>("Date");
@@ -141,8 +119,13 @@ public class DashboardView extends VBox {
         
         Button viewAllBtn = new Button("View All Transactions");
         viewAllBtn.setOnAction(e -> {
-            MainLayout mainLayout = (MainLayout) getParent().getParent();
-            mainLayout.showTransactions();
+            // Get the MainLayout parent through the scene graph
+            // Fix for the error when using ScrollPane
+            BorderPane borderPane = (BorderPane) getScene().getRoot();
+            if (borderPane instanceof MainLayout) {
+                MainLayout mainLayout = (MainLayout) borderPane;
+                mainLayout.showTransactions();
+            }
         });
         
         recentTxnBox.getChildren().addAll(sectionTitle, recentTransactionsTable, viewAllBtn);
@@ -162,8 +145,13 @@ public class DashboardView extends VBox {
         
         Button viewAllBtn = new Button("Manage Budgets");
         viewAllBtn.setOnAction(e -> {
-            MainLayout mainLayout = (MainLayout) getParent().getParent();
-            mainLayout.showBudgets();
+            // Get the MainLayout parent through the scene graph
+            // Fix for the error when using ScrollPane
+            BorderPane borderPane = (BorderPane) getScene().getRoot();
+            if (borderPane instanceof MainLayout) {
+                MainLayout mainLayout = (MainLayout) borderPane;
+                mainLayout.showBudgets();
+            }
         });
         
         budgetBox.getChildren().addAll(sectionTitle, budgetProgressBox, viewAllBtn);
@@ -220,22 +208,6 @@ public class DashboardView extends VBox {
             }
             
             recentTransactionsTable.setItems(recentTxns);
-            
-            // Calculate expense by category for chart
-            Map<String, Double> expenseByCategory = transactions.stream()
-                .filter(t -> "Expense".equals(t.getType()) && t.getCategoryName() != null)
-                .collect(java.util.stream.Collectors.groupingBy(
-                    Transaction::getCategoryName,
-                    java.util.stream.Collectors.summingDouble(Transaction::getAmount)
-                ));
-            
-            // Update chart
-            ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList();
-            expenseByCategory.forEach((category, amount) -> {
-                pieChartData.add(new PieChart.Data(category + " - " + currencyFormat.format(amount), amount));
-            });
-            
-            expenseChart.setData(pieChartData);
             
         }, ex -> {
             NotificationUtils.showError("Error", "Failed to load transaction data: " + ex.getMessage());
