@@ -1,0 +1,34 @@
+MiniFin/
+│
+├── src/
+│   ├── com/minifin/
+│   │   ├── App.java                   ← Entry point
+│   ├── com/minifin/controller/
+│   │   ├── TransactionController.java
+│   │   ├── BudgetController.java
+│   │   ├── ReportController.java
+│   ├── com/minifin/model/
+│   │   ├── Transaction.java
+│   │   ├── Category.java
+│   │   ├── Budget.java
+│   │   ├── FinancialSummary.java
+│   │   ├── User.java
+│   ├── com/minifin/database/
+│   │   ├── DatabaseManager.java
+│   ├── com/minifin/view/
+│   │   ├── MainLayout.java
+│   │   ├── Sidebar.java
+│   │   ├── DashboardView.java
+│   │   ├── TransactionView.java
+│   │   ├── BudgetView.java
+│   │   ├── ReportView.java
+│   ├── com/minifin/util/
+│   │   ├── DateTimeUtils.java
+│   │   ├── ValidationUtils.java
+│   │   ├── NotificationUtils.java
+│   │   ├── GenerateTestData.java
+│
+├── resources/
+│   ├── styles/
+│   │   ├── minimalist.css
+│   ├── finance.db                    ← SQLite database
